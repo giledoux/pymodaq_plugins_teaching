@@ -8,13 +8,23 @@ import warnings
 
 from pymodaq_plugins_teaching.hardware.serial_addresses import SerialAddresses, BaseEnum
 import random
+from pylablib.core.devio import SCPI, interface
 
-class RessourceManager:
+
+class EnumParameterClass(interface.EnumParameterClass):
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+
+    def names(self):
+        list(self._get_alias_map().keys())
+
+
+class ResourceManager:
 
     def __init__(self):
         pass
 
-    def list_ressources(self):
+    def list_resources(self):
         """List all possible addresses"""
         return SerialAddresses.names()
 
@@ -25,25 +35,11 @@ class Keithley2110:
     This is simulating a fake instrument but follows the PyLabLib driver structure
     """
 
-    _measurements = BaseEnum("function",
-                            {"volt_dc": "VOLT:DC",
-                             "curr_dc": "CURR:DC",
-                             "none": "NONE"})
+    _p_function = interface.EnumParameterClass("function",
+                                               {"volt_dc": "VOLT:DC", "curr_dc": "CURR:DC",
+                                                "freq_volt": "FREQ:VOLT", "none": "NONE"})
 
-    _volt_ranges = BaseEnum('volt_range',
-                           {0: 0.1,
-                            1: 1,
-                            2: 10,
-                            2: 100})
-    _curr_ranges = BaseEnum('curr_range',
-                           {0: 1e-4,
-                            1: 1e-5,
-                            2: 1e-2,
-                            3: 1e-1,
-                            4: 1})
 
-    _measurement = _measurements["volt_dc"]
-    _range = _volt_ranges[0]
 
     def __init__(self, address: str = None):
 
@@ -64,7 +60,7 @@ class Keithley2110:
             else:
                 self._is_open = True
 
-    def close_communication(self):
+    def close(self):
         if self._is_open:
             self._is_open = False
 
@@ -80,7 +76,7 @@ class Keithley2110:
     def get_range(self) -> float:
         return self._range.value
 
-    def get_reading(self):
+    def get_reading(self, channel='primary'):
         return self.get_range() * random.random()
 
     def get_range(self):
